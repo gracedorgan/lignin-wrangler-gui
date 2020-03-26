@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h3 class="text-muted">Uploaded files</h3>
+    </div>
+    <hr>
+    {% if error %}
+        <p class=error><strong>Error:</strong> {{ error }} </p>
+    {% endif %}
+    <div>
+        <button class="btn btn-info" data-toggle="collapse" data-target="#demo">
+            Show Log Output
+        </button>
+        <div id="demo" class="collapse">
+            <pre>{{log_output}}</pre>
+        </div>
+    </div>
+    <div>
+        This is a list of the files you just uploaded, click on them to load/download them
+        <ul>
+            {% for file in filenames %}
+            <li><a href="{{url_for('uploaded_file', filename=file)}}">{{file}}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+    <hr>
+    <div class="container">
+        <p>These are all of the output files you just generated, click on them individually to load/download them, or use the "download all" button at the bottom of the page.</p>
+        <br>
+        <div class="row">
+            <div class="col-sm">
+                <h6>Matched Compounds</h6>
+                <div class="list-group">
+                    {% for file in matched_csvs %}
+                    <a href="{{url_for('outputted_file', filename=file)}}">{{file}}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-sm">
+                <h6>Cleaned csvs</h6>
+                <div class="list-group">
+                    {% for file in clean_csvs %}
+                    <a href="{{url_for('outputted_file', filename=file)}}">{{file}}</a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm">
+                <h6>Compound Drawings</h6>
+                <div class="list-group">
+                    {% for file in mol_drawings %}
+                    <a href="{{url_for('outputted_file', filename=file)}}">{{file}}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-sm">
+                <h6>Graphs</h6>
+                <div class="list-group">
+                    {% for file in graphs %}
+                    <a href="{{url_for('outputted_file', filename=file)}}">{{file}}</a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="d-flex justify-content-center">
+        <a href="{{url_for( 'download_all', outputs = output_files)}}"> DOWNLOAD ALL </a>
+    </div>
+
+
+    <hr>
+</div>
+</div>
+</body>
+</html>

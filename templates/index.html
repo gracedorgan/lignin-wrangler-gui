@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css"
+          rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+    <script>
+        function myFunction() {
+            $('#btn-one').html('<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Loading...').addClass('disabled');
+        };
+
+    </script>
+    <script>$(".main-container.collapse").on('shown.bs.collapse', function () {
+        //when a collapsed div is shown hide all other collapsible divs that are visible
+        $(".main-container.collapse").not($(this)).collapse('hide');
+    });</script>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h3 class="text-muted">Upload files</h3>
+    </div>
+    <hr/>
+    <div id="content" class="collapse in multi-collapse">
+        <p>Please select all of the files you want to upload at once!</p>
+        <form action="upload" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <input type="file" multiple="" name="file[]" class="form-control-file"/><br/>
+            </div>
+
+            <div class="form-group">
+                <label for="ms_accuracy">ms_accuracy:</label>
+                <input type="text" id="ms_accuracy" value="0.0001" name="ms_accuracy">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo">Show parameter
+                    description
+                </button>
+                <div id="demo" class="collapse">
+                    The precision of the MS used, with default value 0.0001.
+                    This value is used as the tolerance to specify if two M/Z
+                    values should be considered identical, when comparisons are
+                    required such as when subtracting noise (if 'blank' output is
+                    provided) and/or searching for duplicate M/Z values from direct
+                    injection spectra.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="blank_file_name">blank_file_name:</label>
+                <input type="text" id="blank_file_name" name="blank_file_name">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo1">Show parameter
+                    description
+                </button>
+                <div id="demo1" class="collapse">
+                    The file name of a blank ms run.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="combined_output_fname">combined_output_fname:</label>
+                <input type="text" id="combined_output_fname" name="combined_output_fname">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo2">Show parameter
+                    description
+                </button>
+                <div id="demo2" class="collapse">
+                    Specifies to combine output from all files processed
+                    in an invocation of this program into files with a
+                    base name provided with this option.  This overrides
+                    the default behavior to write output from
+                    different files to separate output files, with
+                    '_matched' added to the base name.
+                </div>
+            </div>
+<!--todo: the -d -directory and the list_file and the sub_dir_flag options are not currently available, due to the way files are currently uploading.-->
+<!--            todo: you probably do not need the filename field, bc all files u upload would probs be read.-->
+<!--            <div class="form-group">-->
+<!--                <label for="file_name">file_name:</label>-->
+<!--                <input type="text" id="file_name" name="file_name">-->
+<!--                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo3">File name to read. - you probably would only upload files you want read.-->
+<!--                </button>-->
+<!--                <div id="demo3" class="collapse">-->
+<!--                    description of parameter-->
+<!--                </div>-->
+<!--            </div>-->
+<!-- the below form-group is for true/false input-->
+            <div class="form-group">
+                <label for="direct_injection">check for direct_injection:</label>
+                <input type="checkbox" id="direct_injection" name="direct_injection">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo3">Show parameter
+                    description
+                </button>
+                <div id="demo3" class="collapse">
+                    If this option is chosen and retention time is included in
+                    input, the program will combine redundant M/Z values from
+                    different spectra, reporting the average intensity and
+                    omitting retention times.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="min_rel_intensity">min_rel_intensity:</label>
+                <input type="text" id="min_rel_intensity" value="5" name="min_rel_intensity">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo4">Show parameter
+                    description
+                </button>
+                <div id="demo4" class="collapse">
+                    By default, this program will only analyze peaks that have
+                    intensity at least 5% of the largest
+                    peak. Use this option to change the value from this
+                    default.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="non_dom_iso_flag">non_dom_iso_flag:</label>
+                <input type="checkbox" id="non_dom_iso_flag" name="non_dom_iso_flag" checked>
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo5">Show parameter
+                    description
+                </button>
+                <div id="demo5" class="collapse">
+                    By default, this program will add *'s next to the formulas
+                    of non-dominant isotopes. The number of *'s corresponds to
+                    the number of steps away from the most dominant isotopes
+                    that this isotope.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="plot_data">plot_data:</label>
+                <input type="checkbox" id="plot_data" name="plot_data">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo12">Show parameter
+                    description
+                </button>
+                <div id="demo12" class="collapse">
+                    This option will create the intensity versus M/Z plots for all
+                    files provided with either the -f/--file_name option or the
+                    -l/--list_file options. If there is retention time in the
+                    data, peaks with different retention times will be combined by
+                    averaging intensities, as they are done in direct injection.
+                    If retention data is included, additional plots will be created:
+                    total intensity versus time, and unique M/Z values (differ more
+                    than specified ppm tolerance) intensity versus time.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="quit_after_mzml_to_csv">quit_after_mzml_to_csv:</label>
+                <input type="checkbox" id="quit_after_mzml_to_csv" name="quit_after_mzml_to_csv">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo7">Show parameter
+                    description
+                </button>
+                <div id="demo7" class="collapse">
+                    Flag to indicate that files should be read, low
+                    intensity peaks removed (using min_rel_intensity and,
+                    if provided, blank run data), and saved to a csv.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="ret_time_accuracy">ret_time_accuracy:</label>
+                <input type="text" id="ret_time_accuracy" name="ret_time_accuracy">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo11">Show parameter
+                    description
+                </button>
+                <div id="demo11" class="collapse">
+                    The precision of the retention times (if applicable)
+                    included, with default value 0.25.
+                    This value is used as the tolerance to determine whether
+                    two peaks with M/Z values within MS accuracy (the
+                    '-a'/'ms_accuracy' option) should be combined (averaging
+                    intensity).
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="read_mzml_to_csv">read_mzml_to_csv:</label>
+                <input type="checkbox" id="read_mzml_to_csv" name="read_mzml_to_csv">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo8">Show parameter
+                    description
+                </button>
+                <div id="demo8" class="collapse">
+                    Flag to indicate that mzml files should be read and saved to
+                    a csv before proceeding to analysis.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="threshold">threshold:</label>
+                <input type="text" value="10" id="threshold" name="threshold">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo9">Show parameter
+                    description
+                </button>
+                <div id="demo9" class="collapse">
+                    Accuracy threshold in ppm. The default value is 10
+                    ppm. This threshold is used to determine which, if any, MWs in our
+                    dictionary match the provided M/Z, assuming that the charge is +1
+                    or -1.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="unlabeled_csvs">unlabeled_csvs:</label>
+                <input type="checkbox" id="unlabeled_csvs" name="unlabeled_csvs">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo13">Show parameter
+                    description
+                </button>
+                <div id="demo13" class="collapse">
+                    This option omits comments, labels, and retention times in
+                    output CSVs, as this is the format required by some other
+                    MS output processing programs.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="picture_output_flag">picture_output_flag:</label>
+                <input type="checkbox" id="picture_output_flag" name="picture_output_flag">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo14">Show parameter
+                    description
+                </button>
+                <div id="demo14" class="collapse">
+                    By default, output will not include drawn visual pictures of the compounds
+                    and their substructures. If this option is chosen, drawn pictures of
+                    the compounds and their substructures will be output into the output
+                    directory. To help parent compound identification, a file will be generated for each
+                    identified potential parent and its substructures with molecular weights corresponding
+                    to peaks from MS2 output. The file names will be labeled with the potential parent
+                    molecule SMILES string.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="omit_mol_ion">omit_mol_ion:</label>
+                <input type="checkbox" id="omit_mol_ion" name="omit_mol_ion">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#demo10">Show parameter
+                    description
+                </button>
+                <div id="demo10" class="collapse">
+                    Flag to indicate that the program should not attempt to match
+                    M/Z values to molecular ion MWs (which is the default action)
+                </div>
+            </div>
+
+            <button data-toggle="collapse" data-target=".multi-collapse" type="submit" onclick="myFunction()" id="btn-one" class="btn btn-primary">Upload and Compute</button>
+        </form>
+    </div>
+    <div id="loading" class="collapse multi-collapse">
+        <div align="center">
+            <img src="../static/91.gif">
+            <h4>Please wait, your files are being processed. Log output will be available when the next page has loaded.</h4>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

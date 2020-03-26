@@ -1,0 +1,12 @@
+M/Z        Intensity  Ret Time  Rel Inten   Match MW  ppm Err  Parent     DBE Match Type
+ 248.0833     658000       nan        nan   248.0837      1.7  C17H12O2  12.0 same
+ 264.1150    1790000       nan        nan   264.1150      0.1  C18H16O2  11.0 same
+ 268.1119     830000       nan        nan   268.1099      7.3  C17H16O3  10.0 same
+ 286.1185     603000       nan        nan   286.1205      7.0  C17H18O4   9.0 same
+ 296.1412    2070000       nan        nan   296.1412      0.1  C19H20O3  10.0 same
+ 300.1380    1620000       nan        nan   300.1362      6.1  C18H20O4   9.0 same
+ 312.1350     810000       nan        nan   312.1362      3.7  C19H20O4  10.0 same
+ 313.1389     602000       nan        nan   312.1362      3.7  C19H20O4  10.0 same
+ 318.1437     920000       nan        nan   318.1467      9.5  C18H22O5   8.0 same
+ 328.1695     621000       nan        nan   328.1675      6.2  C20H24O4   9.0 same
+ 346.1803     627000       nan        nan   346.1780      6.6  C20H26O5   8.0 same
