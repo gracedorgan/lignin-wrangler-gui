@@ -1,3 +1,4 @@
+rdkit
 certifi==2019.11.28
 Click==7.0
 common-wrangler==0.3.0
