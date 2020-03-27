@@ -4,7 +4,6 @@ channels:
   - defaults
 dependencies:
   - flask
-  - anaconda
   - gunicorn
   - pandas
   - python=3.6
