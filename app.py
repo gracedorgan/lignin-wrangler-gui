@@ -497,14 +497,15 @@ def upload():
     matched_csvs = []
     clean_csvs = []
     graphs = []
-    mol_drawings = []
+    drawings_path = join(OUTPUT_PATH, "matched_formula_species")
+    mol_drawings = [f for f in os.listdir(drawings_path) if isfile(join(drawings_path, f))]
     for f in only_files:
         if "_matched" in f:
             matched_csvs.append(f)
         if "_clean" in f:
             clean_csvs.append(f)
         if ".png" in f:
-            if "_graph" in f:
+            if "_graph" in f or "v_int" in f:
                 graphs.append(f)
             else:
                 mol_drawings.append(f)
