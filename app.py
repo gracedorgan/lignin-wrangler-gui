@@ -7,12 +7,16 @@ import numpy as np
 from common_wrangler.common import InvalidDataError, warning, read_csv_header, silent_remove
 from flask import Flask, render_template, request, send_from_directory, send_file
 from lignin_wrangler.lignin_common import MZ_STR_HEADER, MZ_STR_FMT, MATCH_STR_FMT, REL_INTENSITY, MIN_ERR, \
-    MATCH_STR_HEADER, MIN_ERR_MW, MIN_ERR_FORMULA, MIN_ERR_DBE, MIN_ERR_MATCH_TYPE
+    MATCH_STR_HEADER, MIN_ERR_MW, MIN_ERR_FORMULA, MIN_ERR_DBE, MIN_ERR_MATCH_TYPE, ION_ENERGIES, ION_MZ_DICT, INTENSITY
 from lignin_wrangler.match_formulas import calc_accuracy_ppm, compare_mz_mw
+from lignin_wrangler.ms_plotting import initial_output, plot_mz_v_intensity
 from lignin_wrangler.process_ms_input import check_input_csv_header, process_blank_file, process_ms_run_file, \
     write_output
-from lignin_wrangler.structure_search import make_dbe_mw_dict, make_dbe_mw_graphs, get_all_substructures, \
-    output_substructures
+from lignin_wrangler.lignin_common import (DEF_SUFFIX, DEF_LONG_SUFFIX, CSV_EXT, MZML_EXT, DEF_MS_ACCURACY,
+                                           DEF_RET_TIME_ACCURACY, ION_ENERGIES, PARENT_MZ, PARENT_FORMULA,
+                                           PARENT_MATCH_ERR, ION_MZ_DICT)
+from lignin_wrangler.structure_search import  make_dbe_mw_graphs, get_all_substructures, \
+    output_substructures, make_ms2_dict, find_substructure_sets
 
 from rdkit import Chem
 from werkzeug.utils import secure_filename
@@ -115,9 +119,11 @@ def validate_input(args):
     else:
         args.blank_file_name = None
 
-    args.ms_accuracy, args.num_decimals_ms_accuracy, deci_error_1 = validate_decimal_input(args.ms_accuracy, "'-a'/'--ms_accuracy'")
-    args.ret_time_accuracy, args.num_decimals_ret_time_accuracy, deci_error_2 = validate_decimal_input(args.ret_time_accuracy,
-                                                                                         "'-r'/'--ret_time_accuracy'")
+    args.ms_accuracy, args.num_decimals_ms_accuracy, deci_error_1 = validate_decimal_input(args.ms_accuracy,
+                                                                                           "'-a'/'--ms_accuracy'")
+    args.ret_time_accuracy, args.num_decimals_ret_time_accuracy, deci_error_2 = validate_decimal_input(
+        args.ret_time_accuracy,
+        "'-r'/'--ret_time_accuracy'")
     if deci_error_1:
         error = deci_error_1
     if deci_error_2:
@@ -221,23 +227,36 @@ def get_high_inten_short(ms_level, trimmed_mz_array, max_output_mzs=5):
     return high_inten_str
 
 
-def get_high_inten_long(ms_level, summary_output_dict, max_output_mzs=5):
+def get_high_inten_long(ms_level, high_int_peak_str_list, long_output_dict, max_output_mzs=5):
     """
     print out the closest matches to the top 5 intensities, showing their ppm error
     :param ms_level: str, MS level read
-    :param summary_output_dict: OrderedDict, keys are strings of peak data, and values are the extended output dicts
+    :param high_int_peak_str_list: list, strings of peak data for the highest intensity unique peaks, in descending
+        order of intensity
+    :param long_output_dict: OrderedDict, keys are strings of peak data, and values are the extended output dicts
     :param max_output_mzs: int, max number of mz values to process
-    :return: n/a, prints to stdout
+    :return: str
     """
     if "_" in ms_level:
         ms_level = ms_level.replace("_", ", ").replace("p", ".")
 
+    high_int_print_dict = {}
+
     high_inten_str = f"Summary output for MS level {ms_level}: closest matches for (up to) the top " \
                      f"{max_output_mzs} unique M/Z values with the highest intensities.\n" + MATCH_STR_HEADER
-    for peak_str, output_dict in summary_output_dict.items():
-        high_inten_str += MATCH_STR_FMT.format(peak_str, output_dict[REL_INTENSITY], output_dict[MIN_ERR_MW],
-                                               output_dict[MIN_ERR], output_dict[MIN_ERR_FORMULA],
-                                               output_dict[MIN_ERR_DBE], output_dict[MIN_ERR_MATCH_TYPE])
+
+    # the high_int_peak_str_list is sorted by M/Z; print in order of highest intensity
+    for peak_str in high_int_peak_str_list:
+        output_dict = long_output_dict[peak_str]
+        intensity_int = int(output_dict[INTENSITY])
+        high_int_print_dict[intensity_int] = MATCH_STR_FMT.format(peak_str, output_dict[REL_INTENSITY],
+                                                                  output_dict[MIN_ERR_MW], output_dict[MIN_ERR],
+                                                                  output_dict[MIN_ERR_FORMULA],
+                                                                  output_dict[MIN_ERR_DBE],
+                                                                  output_dict[MIN_ERR_MATCH_TYPE])
+    intensity_list = sorted(list(high_int_print_dict), reverse=True)
+    for intensity_int in intensity_list:
+        high_inten_str += high_int_print_dict[intensity_int]
 
     return high_inten_str
 
@@ -252,6 +271,7 @@ def wrangler_main(args, process_file_list):
 
     final_str = ""
     write_mode = 'w'
+    ms2_dict = defaultdict(lambda: defaultdict(lambda: None))
     dbe_dict = defaultdict(dict)
     mw_dict = defaultdict(dict)
     blank_data_array_dict = {}
@@ -260,18 +280,22 @@ def wrangler_main(args, process_file_list):
         max_unique_mz_to_collect = max_mz_in_stdout
     else:
         max_unique_mz_to_collect = 1e9
-    if args.blank_file_name is not None:
-        blank_data_array_dict = process_blank_file(args)
-        for ms_level, ms_array in blank_data_array_dict.items():
-            if ms_array.shape[0] < 2:
-                trimmed_mz_array = ms_array
-            else:
-                final_str = final_str + "\nProcessing MS Level {ms_level.replace('_', ', ').replace('p', '.')} data"
-                print(f"\nProcessing MS Level {ms_level.replace('_', ', ').replace('p', '.')} data")
-                trimmed_mz_array = trim_close_mz_vals(ms_array, args.num_decimals_ms_accuracy, args.threshold,
-                                                      max_output_mzs=max_unique_mz_to_collect)
-                final_str = final_str + get_high_inten_short(ms_level, trimmed_mz_array,
-                                                             max_output_mzs=max_mz_in_stdout)
+        # blank file processing
+        if args.blank_file_name is not None:
+            fname = args.blank_file_name
+            fname_lower = os.path.basename(fname).lower()
+            blank_data_array_dict = process_blank_file(args)
+            for ms_level, ms_array in blank_data_array_dict.items():
+                array, my_str = initial_output(fname, fname_lower, ms_array, ms_level, max_unique_mz_to_collect,
+                                               max_mz_in_stdout,
+                                               args.threshold, args.num_decimals_ms_accuracy, args.ret_time_accuracy,
+                                               args.num_decimals_ret_time_accuracy, args.out_dir,
+                                               args.quit_after_mzml_to_csv,
+                                               args.direct_injection)
+                final_str += my_str
+
+    # all other file processing
+    gathered_ms2_data = False
     for fname in process_file_list:
         base_fname = os.path.basename(fname)
         fname_lower = base_fname.lower()
@@ -281,40 +305,69 @@ def wrangler_main(args, process_file_list):
         prot_flag = fnmatch.fnmatch(fname_lower, "*+*")
         deprot_flag = fnmatch.fnmatch(fname_lower, "*-*")
         for ms_level, ms_array in data_array_dict.items():
-            if ms_array.shape[0] < 2:
-                trimmed_mz_array = ms_array
-            else:
-                final_str += "\nProcessing MS Level {ms_level.replace('_', ', ').replace('p', '.')} data"
-                print(f"\nProcessing MS Level {ms_level.replace('_', ', ').replace('p', '.')} data")
-                trimmed_mz_array = trim_close_mz_vals(ms_array, args.num_decimals_ms_accuracy, args.threshold,
-                                                      max_output_mzs=max_unique_mz_to_collect)
-                if args.quit_after_mzml_to_csv or "blank" in fname_lower:
-                    final_str += get_high_inten_short(ms_level, trimmed_mz_array, max_output_mzs=max_mz_in_stdout)
-                    # move to next file without further analysis
-                    continue
+            trimmed_mz_array, my_str = initial_output(fname, fname_lower, ms_array, ms_level, max_unique_mz_to_collect,
+                                                      max_mz_in_stdout, args.threshold, args.num_decimals_ms_accuracy,
+                                                      args.ret_time_accuracy, args.num_decimals_ret_time_accuracy,
+                                                      args.out_dir, args.quit_after_mzml_to_csv, args.direct_injection)
+            final_str += my_str
+            if args.quit_after_mzml_to_csv or "blank" in fname_lower:
+                # move to next file without further analysis
+                continue
 
-            num_matches, matched_formulas, short_output_list, long_output_list, summary_output_dict = \
+            num_matches, matched_formulas, short_output_list, long_output_dict, high_int_peak_str_list = \
                 compare_mz_mw(base_fname, trimmed_mz_array, args.threshold, args.omit_mol_ion,
                               deprot_flag, prot_flag, args.non_dom_iso_flag, max_mz_in_stdout)
 
-            if (not (fnmatch.fnmatch(fname_lower, "*blank*"))) and (fnmatch.fnmatch(fname_lower, "*hcd*")):
-                make_dbe_mw_dict(fname, dbe_dict, mw_dict, long_output_list, data_array_dict[ms_level],
-                                 args.threshold)
-            write_output(fname, ms_level, num_matches, short_output_list, long_output_list,
+            write_output(fname, ms_level, num_matches, short_output_list, long_output_dict.values(),
                          matched_formulas, args.combined_output_fname, args.omit_mol_ion, deprot_flag,
                          prot_flag, write_mode, args.out_dir)
-            final_str += get_high_inten_long(ms_level, summary_output_dict)
-            if args.picture_output_flag:
-                all_substructures = get_all_substructures(long_output_list)
-                output_substructures(all_substructures, args.out_dir)
+            final_str += get_high_inten_long(ms_level, high_int_peak_str_list, long_output_dict)
 
             # if there is an combined_output_fname and more than one file, append the data, don't write over it
             if args.combined_output_fname:
                 write_mode = 'a'
 
+            if "2" in ms_level and not ("blank" in fname_lower) and ("hcd" in fname_lower):
+                if len(process_file_list) < 2:
+                    warning(f"Only one set of MS2 data has been read (from file {base_fname}).\n"
+                            f"    No chemical species matching will be attempted, since at least two MS2 data "
+                            f"sets must be provided for\n    this procedure, with one of the data sets coming "
+                            f"from a 0 ionization energy run.")
+                else:
+                    make_ms2_dict(fname_lower, ms_level, ms2_dict, trimmed_mz_array, long_output_dict,
+                                  args.threshold, args.ms_accuracy, args.num_decimals_ms_accuracy)
+                    gathered_ms2_data = True
+
     # Now that finished reading each file, exit (if only saving csv) or graph
-    if not args.quit_after_mzml_to_csv and len(process_file_list) > 1:
-        make_dbe_mw_graphs(dbe_dict, mw_dict, args.out_dir)
+        # If '-q' option used to exit without analysis, skip the next section (which skips to the end of the
+        #     program
+        if not args.quit_after_mzml_to_csv:
+            if gathered_ms2_data:
+                for fkey, fkey_dict in ms2_dict.items():
+                    ion_energies = fkey_dict[ION_ENERGIES].keys()
+                    num_ion_energies = len(ion_energies)
+                    if num_ion_energies < 2:
+                        warning(f"No chemical species matching will be attempted for files designated {fkey}.\n    "
+                                f"For this functionality, at least two MS2 data sets must be provided, one of them "
+                                f"from a 0 ionization energy run.\n    Note that the program matches sets of MS2 "
+                                f"output by searching for file names that differ only the number after\n    'HCD' "
+                                f"(case insensitive), which is read as the ionization energy.")
+                    elif 0 not in ion_energies:
+                        warning(f"Did not find 0 ionization energy output for the set of files designated {fkey}.\n    "
+                                f"This output is used to identify the parent. Contact the developers for "
+                                f"more options.")
+                    else:
+                        print(f"\nNow analyzing {fkey} files.\nUsing M/Z "
+                              f"{fkey_dict[PARENT_MZ]:.{args.num_decimals_ms_accuracy}f} as the parent peak, as "
+                              f"it is the closest peak in the 0 ionization output to the\n    specified precursor ion. "
+                              f"The closest matching molecular formula, {fkey_dict[PARENT_FORMULA]} (with "
+                              f"{fkey_dict[PARENT_MATCH_ERR]:.1f} ppm error),\n    will be used as the parent "
+                              f"formula.")
+                        plot_mz_v_intensity(fkey, fkey_dict[ION_MZ_DICT], args.num_decimals_ms_accuracy,
+                                            args.out_dir)
+                        make_dbe_mw_graphs(fkey, fkey_dict[ION_ENERGIES], args.out_dir)
+                        find_substructure_sets(fkey, fkey_dict, args.threshold, args.num_decimals_ms_accuracy,
+                                               args.out_dir)
     return final_str
 
 

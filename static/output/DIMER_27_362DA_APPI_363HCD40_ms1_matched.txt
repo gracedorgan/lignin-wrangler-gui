@@ -1,0 +1,27 @@
+M/Z        Intensity  Ret Time  Rel Inten   Match MW  ppm Err   Parent     DBE Match Type
+ 154.0776     167000       nan        nan   154.0782     -4.2  C12H10      8.0 same
+ 166.0776     535000       nan        nan   166.0782     -3.9  C13H10      9.0 same
+ 167.0810     205000       nan        nan   166.0782     -3.9  C13H10      9.0 same
+ 168.0591     448000       nan        nan   168.0575      9.5  C12H8O      9.0 same
+ 168.0930     138000       nan        nan   168.0939     -5.4  C13H12      8.0 same
+ 169.0627     219000       nan        nan   168.0575      9.5  C12H8O      9.0 same
+ 180.0949     198000       nan        nan   180.0939      5.6  C14H12      9.0 same
+ 192.0927     355000       nan        nan   192.0939     -6.2  C15H12     10.0 same
+ 196.0536     418000       nan        nan   196.0524      6.0  C13H8O2    10.0 same
+ 196.0719     135000       nan        nan   196.0736     -8.5  C10H12O4    5.0 same
+ 196.0903     473000       nan        nan   196.0888      7.5  C14H12O     9.0 same
+ 197.0578     345000       nan        nan   196.0524      6.0  C13H8O2    10.0 same
+ 197.0946     103000       nan        nan   196.0888      7.5  C14H12O     9.0 same
+ 208.0905     248000       nan        nan   208.0888      8.1  C15H12O    10.0 same
+ 209.0935     152000       nan        nan   208.0888      8.1  C15H12O    10.0 same
+ 210.0672     296000       nan        nan   210.0681     -4.2  C14H10O2   10.0 same
+ 211.0685     130000       nan        nan   210.0681     -4.2  C14H10O2   10.0 same
+ 212.0468     124000       nan        nan   212.0473     -2.5  C13H8O3    10.0 same
+ 212.0850     148000       nan        nan   212.0837      6.0  C14H12O2    9.0 same
+ 228.0796      92900       nan        nan   228.0786      4.2  C14H12O3    9.0 same
+ 234.0680     157000       nan        nan   234.0681     -0.3  C16H10O2   12.0 same
+ 236.0836     123000       nan        nan   236.0837     -0.6  C16H12O2   11.0 same
+ 238.1010     101000       nan        nan   238.0994      6.8  C16H14O2   10.0 same
+ 240.0797     129000       nan        nan   240.0786      4.4  C15H12O3   10.0 same
+ 241.0823      98500       nan        nan   240.0786      4.4  C15H12O3   10.0 same
+ 242.0598     106000       nan        nan   242.0579      7.8  C14H10O4   10.0 same
